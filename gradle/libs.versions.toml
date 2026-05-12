@@ -7,7 +7,7 @@ runPaper = "3.0.2"
 modPublishPlugin = "1.1.0"
 
 # Dependencies
-paper = "1.21.4-R0.1-SNAPSHOT"
+folia = "[26.1.2.build,)"
 paperTrail = "1.0.1"
 legacyPluginBase = "0.0.1+169-SNAPSHOT"
 bstats = "3.2.1"
@@ -15,11 +15,11 @@ cloudBom = "2.0.0"
 cloudMinecraftBom = "2.0.0-beta.15"
 cloudTranslationsBom = "1.0.0-SNAPSHOT"
 interfacesPaper = "1.0.0-SNAPSHOT"
-vaultApi = "1.7.1"
+vaultUnlockedApi = "2.15"
 essentialsX = "2.21.2"
 jspecify = "1.0.0"
-worldGuard = "7.0.14"
-worldEdit = "7.3.16"
+worldGuard = "7.0.16"
+worldEdit = "7.4.3"
 
 [plugins]
 shadow = { id = "com.gradleup.shadow", version.ref = "shadow" }
@@ -32,8 +32,8 @@ modPublishPlugin = { id = "me.modmuss50.mod-publish-plugin", version.ref = "modP
 
 [libraries]
 # Compile Only
-paper-api = { module = "io.papermc.paper:paper-api", version.ref = "paper" }
-vaultApi = { module = "com.github.MilkBowl:VaultAPI", version.ref = "vaultApi" }
+folia-api = { module = "dev.folia:folia-api", version.ref = "folia" }
+vaultUnlockedApi = { module = "net.milkbowl.vault:VaultUnlockedAPI", version.ref = "vaultUnlockedApi" }
 essentialsX = { module = "net.essentialsx:EssentialsX", version.ref = "essentialsX" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
 worldguard-bukkit = { module = "com.sk89q.worldguard:worldguard-bukkit", version.ref = "worldGuard" }

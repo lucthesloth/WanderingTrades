@@ -1,5 +1,6 @@
 import me.modmuss50.mpp.ReleaseType
 import xyz.jpenilla.resourcefactory.bukkit.Permission
+import xyz.jpenilla.runtask.service.DownloadsAPIService
 
 plugins {
     `java-library`
@@ -34,6 +35,7 @@ repositories {
         mavenContent {
             includeGroup("io.papermc")
             includeGroup("io.papermc.paper")
+            includeGroup("dev.folia")
             includeModule("com.mojang", "brigadier")
             includeModule("net.md-5", "bungeecord-chat")
         }
@@ -50,15 +52,18 @@ repositories {
             includeGroup("com.sk89q.worldguard.worldguard-libs")
             includeGroup("com.sk89q.worldedit")
             includeGroup("com.sk89q.worldedit.worldedit-libs")
+            includeGroup("org.enginehub.lin-bus")
         }
     }
-    maven("https://jitpack.io") {
-        content { includeGroup("com.github.MilkBowl") }
+    maven("https://repo.codemc.io/repository/maven-public/") {
+        mavenContent {
+            includeModule("net.milkbowl.vault", "VaultUnlockedAPI")
+        }
     }
 }
 
 dependencies {
-    compileOnly(libs.paper.api)
+    compileOnly(libs.folia.api)
 
     implementation(libs.paper.trail)
     implementation(libs.legacy.plugin.base) {
@@ -76,7 +81,7 @@ dependencies {
 
     implementation(libs.interfaces.paper)
 
-    compileOnly(libs.vaultApi)
+    compileOnly(libs.vaultUnlockedApi)
     compileOnly(libs.essentialsX) {
         isTransitive = false
     }
@@ -91,16 +96,16 @@ dependencies {
 
 indra {
     javaVersions{
-        target(21)
+        target(25)
     }
 }
 
 paperPluginYaml {
     main = "xyz.jpenilla.wanderingtrades.WanderingTrades"
-    apiVersion = "1.21.4"
+    apiVersion = "1.21.11"
     website = "https://github.com/jpenilla/WanderingTrades"
     authors = listOf("jmp")
-
+    foliaSupported = true
     permissions {
         register("wanderingtrades.trader-spawn-notifications") {
             default = Permission.Default.TRUE
@@ -113,7 +118,7 @@ paperPluginYaml {
     dependencies.server.register("WorldGuard") {
         required = false
     }
-    dependencies.server.register("Vault") {
+    dependencies.server.register("VaultUnlocked") {
         required = false
     }
     dependencies.server.register("PlaceholderAPI") {
@@ -123,7 +128,7 @@ paperPluginYaml {
 
 bukkitPluginYaml {
     main = "wanderingtrades.io.papermc.papertrail.RequiresPaperPlugins"
-    apiVersion = "1.21.4"
+    apiVersion = "1.21.11"
     authors = listOf("jmp")
 }
 
@@ -142,16 +147,16 @@ publishMods.modrinth {
         "1.21.9",
         "1.21.10",
         "1.21.11",
-        "26.1",
-        "26.1.1",
-        "26.1.2",
     )
     modLoaders.add("paper")
+    modLoaders.add("folia")
 }
 
 tasks {
     runServer {
-        minecraftVersion("26.1.2")
+        displayName.set("Folia")
+        downloadsApiService.set(DownloadsAPIService.folia(project))
+        minecraftVersion("1.21.11")
     }
     assemble {
         dependsOn(shadowJar)
