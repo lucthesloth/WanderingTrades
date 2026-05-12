@@ -32,6 +32,7 @@ final class PlayerHeadsImpl implements PlayerHeads {
     private final WanderingTrades plugin;
     private final Map<UUID, MerchantRecipe> recipes = new ConcurrentHashMap<>();
     private final Map<UUID, Long> offlineLastSeen = new ConcurrentHashMap<>();
+    private final Set<UUID> ignoredHeadPlayers = ConcurrentHashMap.newKeySet();
     private final ProfileCompleter profileCompleter;
     private @Nullable ScheduledTask cleanupTask;
 
@@ -73,6 +74,9 @@ final class PlayerHeadsImpl implements PlayerHeads {
             if (selectedRecipes.size() >= amount) {
                 break;
             }
+            if (this.ignoredHeadPlayers.contains(uuid)) {
+                continue;
+            }
             final MerchantRecipe recipe = recipes.get(uuid);
             final PlayerProfile profile = ((SkullMeta) recipe.getResult().getItemMeta()).getPlayerProfile();
             if (profile == null || !profile.hasTextures()) {
@@ -101,6 +105,11 @@ final class PlayerHeadsImpl implements PlayerHeads {
         }
 
         this.offlineLastSeen.put(player.getUniqueId(), System.currentTimeMillis());
+
+        if (this.isIgnored(player)) {
+            this.removeIgnoredHead(player.getUniqueId());
+            return;
+        }
 
         if (this.plugin.vaultHook() != null && this.plugin.configManager().playerHeadConfig().permissionWhitelist()) {
             if (!player.hasPermission(Constants.Permissions.WANDERINGTRADES_HEADAVAILABLE)) {
@@ -176,6 +185,7 @@ final class PlayerHeadsImpl implements PlayerHeads {
     private void load() {
         this.recipes.clear();
         this.offlineLastSeen.clear();
+        this.ignoredHeadPlayers.clear();
         this.profileCompleter.clearQueue();
         if (!this.plugin.configManager().playerHeadConfig().playerHeadsFromServer()) {
             return;
@@ -225,18 +235,20 @@ final class PlayerHeadsImpl implements PlayerHeads {
             return;
         }
         final @Nullable VaultHook vault = this.plugin.vaultHook();
-        if (vault != null && vault.permissions() != null && this.plugin.configManager().playerHeadConfig().permissionWhitelist()) {
+        if (vault != null && vault.permissions() != null && (this.hasIgnoredPermission() || this.plugin.configManager().playerHeadConfig().permissionWhitelist())) {
             Schedulers.async(this.plugin, () -> {
-                if (vault.permissions().playerHas(null, offlinePlayer, Constants.Permissions.WANDERINGTRADES_HEADAVAILABLE)) {
-                    Schedulers.global(this.plugin, () -> {
-                        this.recipes.put(offlinePlayer.getUniqueId(), this.getHeadRecipe(offlinePlayer, username));
-                        this.offlineLastSeen.put(offlinePlayer.getUniqueId(), lastSeen);
-                    });
+                if (this.isIgnored(vault, offlinePlayer)) {
+                    this.removeIgnoredHead(offlinePlayer.getUniqueId());
+                    return;
                 }
+                if (this.plugin.configManager().playerHeadConfig().permissionWhitelist()
+                    && !vault.permissions().playerHas(null, offlinePlayer, Constants.Permissions.WANDERINGTRADES_HEADAVAILABLE)) {
+                    return;
+                }
+                Schedulers.global(this.plugin, () -> this.addOfflineHead(offlinePlayer, username, lastSeen));
             });
         } else {
-            this.recipes.put(offlinePlayer.getUniqueId(), this.getHeadRecipe(offlinePlayer, username));
-            this.offlineLastSeen.put(offlinePlayer.getUniqueId(), lastSeen);
+            this.addOfflineHead(offlinePlayer, username, lastSeen);
         }
     }
 
@@ -244,13 +256,49 @@ final class PlayerHeadsImpl implements PlayerHeads {
         if (this.isUsernameBlacklisted(player.getName())) {
             return;
         }
+        if (this.isIgnored(player)) {
+            this.removeIgnoredHead(player.getUniqueId());
+            return;
+        }
         if (this.plugin.configManager().playerHeadConfig().permissionWhitelist()) {
             if (player.hasPermission(Constants.Permissions.WANDERINGTRADES_HEADAVAILABLE)) {
-                this.recipes.put(player.getUniqueId(), this.getHeadRecipe(player, player.getName()));
+                this.addOnlineHead(player);
             }
         } else {
-            this.recipes.put(player.getUniqueId(), this.getHeadRecipe(player, player.getName()));
+            this.addOnlineHead(player);
         }
+    }
+
+    private void addOnlineHead(final Player player) {
+        this.ignoredHeadPlayers.remove(player.getUniqueId());
+        this.recipes.put(player.getUniqueId(), this.getHeadRecipe(player, player.getName()));
+    }
+
+    private void addOfflineHead(final OfflinePlayer offlinePlayer, final String username, final long lastSeen) {
+        this.ignoredHeadPlayers.remove(offlinePlayer.getUniqueId());
+        this.recipes.put(offlinePlayer.getUniqueId(), this.getHeadRecipe(offlinePlayer, username));
+        this.offlineLastSeen.put(offlinePlayer.getUniqueId(), lastSeen);
+    }
+
+    private void removeIgnoredHead(final UUID uuid) {
+        this.ignoredHeadPlayers.add(uuid);
+        this.recipes.remove(uuid);
+        this.offlineLastSeen.remove(uuid);
+    }
+
+    private boolean isIgnored(final Player player) {
+        final String permission = this.plugin.config().ignoredPerm();
+        return permission != null && !permission.isBlank() && player.hasPermission(permission);
+    }
+
+    private boolean isIgnored(final VaultHook vault, final OfflinePlayer player) {
+        final String permission = this.plugin.config().ignoredPerm();
+        return permission != null && !permission.isBlank() && vault.permissions().playerHas(null, player, permission);
+    }
+
+    private boolean hasIgnoredPermission() {
+        final String permission = this.plugin.config().ignoredPerm();
+        return permission != null && !permission.isBlank();
     }
 
     private boolean isUsernameBlacklisted(final String username) {
