@@ -26,6 +26,7 @@ import xyz.jpenilla.wanderingtrades.command.BaseCommand;
 import xyz.jpenilla.wanderingtrades.command.Commands;
 import xyz.jpenilla.wanderingtrades.config.TradeConfig;
 import xyz.jpenilla.wanderingtrades.util.Constants;
+import xyz.jpenilla.wanderingtrades.util.Schedulers;
 
 import static net.kyori.adventure.text.minimessage.MiniMessage.miniMessage;
 import static org.incendo.cloud.bukkit.parser.selector.MultiplePlayerSelectorParser.multiplePlayerSelectorParser;
@@ -108,25 +109,24 @@ public final class TradeCommands extends BaseCommand {
         } else {
             future = merchantSupplier.get();
         }
-        future.thenAccept(merchant -> player.openMerchant(merchant, false));
+        future.thenAccept(merchant -> Schedulers.entity(this.plugin, player, () -> player.openMerchant(merchant, false), null));
     }
 
     private Supplier<CompletableFuture<Merchant>> tradeConfig(final Player player, final TradeConfig config) {
         return () -> {
             final CompletableFuture<Merchant> future = new CompletableFuture<>();
 
-            this.plugin.getServer().getScheduler().runTaskAsynchronously(this.plugin, () -> {
+            Schedulers.entity(this.plugin, player, () -> {
                 final @Nullable List<MerchantRecipe> merchantRecipes = config.tryGetTrades(player);
                 if (merchantRecipes == null) {
+                    future.cancel(false);
                     return;
                 }
 
-                this.plugin.getServer().getScheduler().runTask(this.plugin, () -> {
-                    final Merchant merchant = this.plugin.getServer().createMerchant(miniMessage().deserialize(config.customName()));
-                    merchant.setRecipes(merchantRecipes);
-                    future.complete(merchant);
-                });
-            });
+                final Merchant merchant = this.plugin.getServer().createMerchant(miniMessage().deserialize(config.customName()));
+                merchant.setRecipes(merchantRecipes);
+                future.complete(merchant);
+            }, () -> future.cancel(false));
 
             return future;
         };
@@ -136,24 +136,26 @@ public final class TradeCommands extends BaseCommand {
         return () -> {
             final CompletableFuture<Merchant> future = new CompletableFuture<>();
 
-            final List<MerchantRecipe> recipes = new ArrayList<>();
-            final WanderingTrader wanderingTrader = player.getWorld().spawn(player.getLocation(), WanderingTrader.class, trader -> {
-                trader.getPersistentDataContainer().set(Constants.TEMPORARY_BLACKLISTED, PersistentDataType.BYTE, (byte) 1);
-                trader.setInvisible(true);
-                trader.setInvulnerable(true);
-                trader.setCollidable(false);
-                trader.setAI(false);
-                trader.setGravity(false);
-                recipes.addAll(trader.getRecipes());
-            });
-            wanderingTrader.remove();
-            this.plugin.tradeApplicator().selectTrades(trades -> {
-                final Merchant merchant = this.plugin.getServer().createMerchant(Component.translatable("entity.minecraft.wandering_trader"));
-                final List<MerchantRecipe> result = new ArrayList<>(trades);
-                result.addAll(recipes);
-                merchant.setRecipes(result);
-                future.complete(merchant);
-            });
+            Schedulers.entity(this.plugin, player, () -> {
+                final List<MerchantRecipe> recipes = new ArrayList<>();
+                final WanderingTrader wanderingTrader = player.getWorld().spawn(player.getLocation(), WanderingTrader.class, trader -> {
+                    trader.getPersistentDataContainer().set(Constants.TEMPORARY_BLACKLISTED, PersistentDataType.BYTE, (byte) 1);
+                    trader.setInvisible(true);
+                    trader.setInvulnerable(true);
+                    trader.setCollidable(false);
+                    trader.setAI(false);
+                    trader.setGravity(false);
+                    recipes.addAll(trader.getRecipes());
+                });
+                wanderingTrader.remove();
+                this.plugin.tradeApplicator().selectTrades(trades -> Schedulers.entity(this.plugin, player, () -> {
+                    final Merchant merchant = this.plugin.getServer().createMerchant(Component.translatable("entity.minecraft.wandering_trader"));
+                    final List<MerchantRecipe> result = new ArrayList<>(trades);
+                    result.addAll(recipes);
+                    merchant.setRecipes(result);
+                    future.complete(merchant);
+                }, () -> future.cancel(false)));
+            }, () -> future.cancel(false));
 
             return future;
         };

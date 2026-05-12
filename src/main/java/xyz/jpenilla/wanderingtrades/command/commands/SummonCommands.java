@@ -34,6 +34,7 @@ import xyz.jpenilla.wanderingtrades.command.Commands;
 import xyz.jpenilla.wanderingtrades.config.Messages;
 import xyz.jpenilla.wanderingtrades.config.TradeConfig;
 import xyz.jpenilla.wanderingtrades.util.Constants;
+import xyz.jpenilla.wanderingtrades.util.Schedulers;
 
 import static net.kyori.adventure.text.minimessage.MiniMessage.miniMessage;
 import static org.incendo.cloud.bukkit.parser.WorldParser.worldParser;
@@ -176,7 +177,7 @@ public final class SummonCommands extends BaseCommand {
         final boolean protect,
         final boolean noInvisibility
     ) {
-        location.getWorld().spawn(location, WanderingTrader.class, wanderingTrader -> {
+        Schedulers.region(this.plugin, location, () -> location.getWorld().spawn(location, WanderingTrader.class, wanderingTrader -> {
             final PersistentDataContainer persistentDataContainer = wanderingTrader.getPersistentDataContainer();
             if (refresh) {
                 persistentDataContainer.set(Constants.REFRESH_NATURAL, PersistentDataType.STRING, "true");
@@ -191,7 +192,7 @@ public final class SummonCommands extends BaseCommand {
                 wanderingTrader.setCanDrinkPotion(false);
                 persistentDataContainer.set(Constants.PREVENT_INVISIBILITY, PersistentDataType.STRING, "true");
             }
-        });
+        }));
     }
 
     private void summonTrader(
@@ -204,7 +205,7 @@ public final class SummonCommands extends BaseCommand {
         if (recipes == null) {
             return;
         }
-        loc.getWorld().spawn(loc, WanderingTrader.class, wanderingTrader -> {
+        Schedulers.region(this.plugin, loc, () -> loc.getWorld().spawn(loc, WanderingTrader.class, wanderingTrader -> {
             wanderingTrader.setRecipes(recipes);
             if (disableAI) {
                 wanderingTrader.setAI(false);
@@ -218,7 +219,7 @@ public final class SummonCommands extends BaseCommand {
             if (this.plugin.config().preventNightInvisibility()) {
                 wanderingTrader.setCanDrinkPotion(false);
             }
-        });
+        }));
     }
 
     private void summonVillagerTrader(
@@ -233,15 +234,15 @@ public final class SummonCommands extends BaseCommand {
         if (recipes == null) {
             return;
         }
-        final Villager v = loc.getWorld().spawn(loc, Villager.class, villager -> {
+        Schedulers.region(this.plugin, loc, () -> loc.getWorld().spawn(loc, Villager.class, villager -> {
             villager.setAI(!disableAI);
             villager.setVillagerType(type);
             villager.setProfession(profession);
             villager.setVillagerLevel(5);
+            villager.setRecipes(recipes);
 
             this.applyConfig(tradeConfig, villager);
-        });
-        v.setRecipes(recipes);
+        }));
     }
 
     private void applyConfig(

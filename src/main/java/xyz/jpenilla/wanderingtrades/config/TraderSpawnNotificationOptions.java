@@ -1,12 +1,10 @@
 package xyz.jpenilla.wanderingtrades.config;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
-import java.util.function.Function;
+import org.bukkit.Location;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
-import org.bukkit.entity.WanderingTrader;
 import org.jspecify.annotations.NullMarked;
 import org.jspecify.annotations.Nullable;
 
@@ -42,9 +40,9 @@ public record TraderSpawnNotificationOptions(
     public interface Players {
         String input();
 
-        Collection<? extends Player> find(WanderingTrader entity);
+        boolean includes(String worldName, Location location, Player player);
 
-        private static Players withInput(final String input, final Function<WanderingTrader, Collection<? extends Player>> func) {
+        private static Players withInput(final String input, final PlayerFilter filter) {
             return new Players() {
                 @Override
                 public String input() {
@@ -52,8 +50,8 @@ public record TraderSpawnNotificationOptions(
                 }
 
                 @Override
-                public Collection<? extends Player> find(final WanderingTrader entity) {
-                    return func.apply(entity);
+                public boolean includes(final String worldName, final Location location, final Player player) {
+                    return filter.includes(worldName, location, player);
                 }
             };
         }
@@ -61,26 +59,32 @@ public record TraderSpawnNotificationOptions(
         static Players parse(final @Nullable String value) {
             Objects.requireNonNull(value, "value");
             if (value.equalsIgnoreCase("all")) {
-                return withInput(value, trader -> trader.getServer().getOnlinePlayers());
+                return withInput(value, (worldName, location, player) -> true);
             } else if (value.equalsIgnoreCase("world")) {
-                return withInput(value, trader -> trader.getWorld().getPlayers());
+                return withInput(value, (worldName, location, player) -> player.getWorld().getName().equals(worldName));
             }
             final boolean box = value.endsWith("box");
             try {
                 final int radius = Integer.parseInt(box ? value.substring(0, value.length() - 3) : value);
-                return withInput(
-                    value,
-                    trader -> trader.getLocation().getWorld().getNearbyEntities(
-                        trader.getLocation(),
-                        radius,
-                        box ? radius : trader.getLocation().getWorld().getMaxHeight() - trader.getLocation().getWorld().getMinHeight(),
-                        radius,
-                        k -> k instanceof Player
-                    ).stream().map(Player.class::cast).toList()
-                );
+                return withInput(value, (worldName, location, player) -> {
+                    if (!player.getWorld().getName().equals(worldName)) {
+                        return false;
+                    }
+                    final Location playerLocation = player.getLocation();
+                    if (Math.abs(playerLocation.getX() - location.getX()) > radius
+                        || Math.abs(playerLocation.getZ() - location.getZ()) > radius) {
+                        return false;
+                    }
+                    return !box || Math.abs(playerLocation.getY() - location.getY()) <= radius;
+                });
             } catch (final NumberFormatException ex) {
                 throw new IllegalArgumentException("Invalid players option, got '" + value + "', expected 'all', 'world', or an integer number for radius.");
             }
         }
+    }
+
+    @FunctionalInterface
+    private interface PlayerFilter {
+        boolean includes(String worldName, Location location, Player player);
     }
 }

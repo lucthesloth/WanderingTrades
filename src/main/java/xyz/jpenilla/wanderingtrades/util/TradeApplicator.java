@@ -57,17 +57,18 @@ public final class TradeApplicator {
     }
 
     private void addTrades(final WanderingTrader wanderingTrader, final boolean refresh) {
-        this.selectTrades(newTrades -> this.addSelectedTrades(wanderingTrader, refresh, newTrades));
+        this.selectTrades(newTrades -> Schedulers.entity(
+            this.plugin,
+            wanderingTrader,
+            () -> this.addSelectedTrades(wanderingTrader, refresh, newTrades),
+            null
+        ));
     }
 
-    public void selectTrades(final Consumer<List<MerchantRecipe>> mainThreadCallback) {
-        this.plugin.getServer().getScheduler().runTaskAsynchronously(this.plugin, () -> {
+    public void selectTrades(final Consumer<List<MerchantRecipe>> asyncCallback) {
+        Schedulers.async(this.plugin, () -> {
             final List<MerchantRecipe> newTrades = this.selectTrades();
-
-            this.plugin.getServer().getScheduler().runTask(
-                this.plugin,
-                () -> mainThreadCallback.accept(newTrades)
-            );
+            asyncCallback.accept(newTrades);
         });
     }
 

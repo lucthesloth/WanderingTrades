@@ -18,6 +18,7 @@ import xyz.jpenilla.wanderingtrades.integration.VaultHook;
 import xyz.jpenilla.wanderingtrades.integration.WorldGuardHook;
 import xyz.jpenilla.wanderingtrades.util.Listeners;
 import xyz.jpenilla.wanderingtrades.util.PlayerHeads;
+import xyz.jpenilla.wanderingtrades.util.Schedulers;
 import xyz.jpenilla.wanderingtrades.util.TradeApplicator;
 import xyz.jpenilla.wanderingtrades.util.UpdateChecker;
 
@@ -57,8 +58,8 @@ public final class WanderingTrades extends JavaPlugin {
     }
 
     private void setupIntegrations() {
-        this.getServer().getScheduler().runTask(this, () -> {
-            if (this.getServer().getPluginManager().isPluginEnabled("Vault")) {
+        Schedulers.global(this, () -> {
+            if (this.getServer().getPluginManager().isPluginEnabled("VaultUnlocked")) {
                 this.vault = new VaultHook(this.getServer());
             }
         });
@@ -70,10 +71,7 @@ public final class WanderingTrades extends JavaPlugin {
 
     private void updateCheck() {
         if (this.config().updateChecker()) {
-            this.getServer().getScheduler().runTask(
-                this,
-                () -> new UpdateChecker(this, "jpenilla/WanderingTrades").checkVersion()
-            );
+            Schedulers.async(this, () -> new UpdateChecker(this, "lucthesloth/WanderingTrades").checkVersion());
         }
     }
 
@@ -96,15 +94,19 @@ public final class WanderingTrades extends JavaPlugin {
 
     private void closeInterfaces() {
         for (final Player player : this.getServer().getOnlinePlayers()) {
-            try {
-                final Object openInventoryView = Player.class.getMethod("getOpenInventory").invoke(player);
-                final Inventory inv = (Inventory) InventoryView.class.getMethod("getTopInventory").invoke(openInventoryView);
-                if (inv.getHolder() instanceof InterfaceView<?, ?>) {
-                    player.closeInventory();
-                }
-            } catch (final ReflectiveOperationException e) {
-                throw new RuntimeException(e);
+            Schedulers.entity(this, player, () -> this.closeInterface(player), null);
+        }
+    }
+
+    private void closeInterface(final Player player) {
+        try {
+            final Object openInventoryView = Player.class.getMethod("getOpenInventory").invoke(player);
+            final Inventory inv = (Inventory) InventoryView.class.getMethod("getTopInventory").invoke(openInventoryView);
+            if (inv.getHolder() instanceof InterfaceView<?, ?>) {
+                player.closeInventory();
             }
+        } catch (final ReflectiveOperationException e) {
+            throw new RuntimeException(e);
         }
     }
 
