@@ -5,7 +5,7 @@
 ![version](https://img.shields.io/badge/version-1.9.5--folia--SNAPSHOT-blue)
 ![minecraft](https://img.shields.io/badge/minecraft-1.21.11-green)
 ![folia](https://img.shields.io/badge/server-Folia%201.21.11-purple)
-[![GitHub Workflow Status](https://img.shields.io/github/actions/workflow/status/lucthesloth/WanderingTrades/build.yml?branch=folia-support&label=actions)](https://github.com/lucthesloth/WanderingTrades/actions/workflows/build.yml?query=branch%3Afolia-support)
+[![build](https://github.com/lucthesloth/WanderingTrades/actions/workflows/build.yml/badge.svg)](https://github.com/lucthesloth/WanderingTrades/actions/workflows/build.yml)
 
 Fork of [jpenilla/WanderingTrades](https://github.com/jpenilla/WanderingTrades) maintained on the `folia-support` branch for Minecraft 1.21.11 and Folia 1.21.11.
 
