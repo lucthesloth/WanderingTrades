@@ -14,4 +14,5 @@ jobs:
         secrets: inherit
         with:
             artifacts-path: 'build/libs/WanderingTrades*.jar'
-            modrinth-publish: true
+            modrinth-publish: false
+            hangar-publish: false
