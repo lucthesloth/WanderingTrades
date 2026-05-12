@@ -17,6 +17,7 @@ public final class Config extends DefaultedConfig {
     private boolean updateLang;
     private boolean updateChecker;
     private String language;
+    private String ignoredPerm;
     private List<String> wgRegionList;
     private List<String> traderWorldList;
     private int refreshCommandTradersMinutes;
@@ -55,6 +56,7 @@ public final class Config extends DefaultedConfig {
         this.traderWorldList = config.getStringList(Fields.traderWorldList);
         this.traderWorldWhitelist = config.getBoolean(Fields.traderWorldWhitelist);
         this.language = config.getString(Fields.language);
+        this.ignoredPerm = config.getString(Fields.ignoredPerm, this.defaultConfig.getString(Fields.ignoredPerm, ""));
         this.updateLang = config.getBoolean(Fields.updateLang);
         this.updateChecker = config.getBoolean(Fields.updateChecker);
 
@@ -91,6 +93,7 @@ public final class Config extends DefaultedConfig {
         this.set(Fields.traderWorldList, this.traderWorldList);
         this.set(Fields.traderWorldWhitelist, this.traderWorldWhitelist);
         this.set(Fields.language, this.language);
+        this.set(Fields.ignoredPerm, this.ignoredPerm);
         this.set(Fields.updateLang, this.updateLang);
         this.set(Fields.updateChecker, this.updateChecker);
         this.traderSpawnNotificationOptions.setTo(this, Fields.traderSpawnNotifications);
@@ -144,6 +147,10 @@ public final class Config extends DefaultedConfig {
 
     public String language() {
         return this.language;
+    }
+
+    public String ignoredPerm() {
+        return this.ignoredPerm;
     }
 
     public List<String> wgRegionList() {
@@ -210,6 +217,7 @@ public final class Config extends DefaultedConfig {
         public static final String traderWorldWhitelist = "traderWorldWhitelist";
         public static final String updateLang = "updateLang";
         public static final String language = "language";
+        public static final String ignoredPerm = "ignored-perm";
         public static final String wgRegionList = "wgRegionList";
         public static final String traderWorldList = "traderWorldList";
         public static final String refreshCommandTradersMinutes = "refreshCommandTradersMinutes";

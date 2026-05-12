@@ -40,13 +40,20 @@ public record TraderSpawnNotificationOptions(
     public interface Players {
         String input();
 
+        int range();
+
         boolean includes(String worldName, Location location, Player player);
 
-        private static Players withInput(final String input, final PlayerFilter filter) {
+        private static Players withInput(final String input, final int range, final PlayerFilter filter) {
             return new Players() {
                 @Override
                 public String input() {
                     return input;
+                }
+
+                @Override
+                public int range() {
+                    return range;
                 }
 
                 @Override
@@ -59,14 +66,14 @@ public record TraderSpawnNotificationOptions(
         static Players parse(final @Nullable String value) {
             Objects.requireNonNull(value, "value");
             if (value.equalsIgnoreCase("all")) {
-                return withInput(value, (worldName, location, player) -> true);
+                return withInput(value, 0, (worldName, location, player) -> true);
             } else if (value.equalsIgnoreCase("world")) {
-                return withInput(value, (worldName, location, player) -> player.getWorld().getName().equals(worldName));
+                return withInput(value, 0, (worldName, location, player) -> player.getWorld().getName().equals(worldName));
             }
             final boolean box = value.endsWith("box");
             try {
                 final int radius = Integer.parseInt(box ? value.substring(0, value.length() - 3) : value);
-                return withInput(value, (worldName, location, player) -> {
+                return withInput(value, radius, (worldName, location, player) -> {
                     if (!player.getWorld().getName().equals(worldName)) {
                         return false;
                     }

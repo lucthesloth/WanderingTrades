@@ -59,6 +59,9 @@ wgRegionList:
 # Setting this option to true will completely disable all WanderingTrades commands.
 disableCommands: false
 
+# Players with this permission will not be selected as trader spawn origins or receive trader spawn notifications.
+ignored-perm: wanderingtraders.ignoreplayer
+
 # Should WanderingTrades check GitHub for updates on startup?
 updateChecker: true
 
